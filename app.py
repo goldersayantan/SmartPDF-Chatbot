@@ -38,11 +38,20 @@ def create_vector_store(text_chunks):
     vector_store.save_local("faiss_index")  # Save FAISS index
     return vector_store
 
+
+# def load_vector_store():
+#     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+#     if os.path.exists("faiss_index"):
+#         return FAISS.load_local("faiss_index", embeddings)
+#     return None
+
 def load_vector_store():
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    if os.path.exists("faiss_index"):
-        return FAISS.load_local("faiss_index", embeddings)
-    return None
+    if not os.path.exists("faiss_index") or not os.listdir("faiss_index"):
+        st.warning("FAISS index not found. Please upload a PDF and process it first.")
+        return None
+    return FAISS.load_local("faiss_index", embeddings)
+
 
 def get_conversational_chain():
     prompt_template = """
