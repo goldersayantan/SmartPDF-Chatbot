@@ -4,7 +4,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
-from langchain_community.vectorstores import FAISS  # Updated import
+from langchain_community.vectorstores import FAISS
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
@@ -76,7 +76,7 @@ def user_input(user_question, vector_store):
     st.write("Reply: ", response["output_text"])
 
 def main():
-    st.set_page_config("Chat PDF")
+    st.set_page_config("SMARTPDF CHATBOT")
     st.header("SMARTPDF-CHATBOT 🤖 | Chat with PDFs!")
 
     user_question = st.text_input("Ask a Question from the PDF Files")
