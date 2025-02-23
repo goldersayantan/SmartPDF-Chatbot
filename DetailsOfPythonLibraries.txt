@@ -1,0 +1,52 @@
+👉streamlit
+Streamlit is a Python library used to build simple and interactive web apps quickly, especially for data science and machine learning projects.
+With this, you can create buttons, text inputs, charts, and more without needing HTML, CSS, or JavaScript! 🚀
+
+👉from PyPDF2 import PdfReader
+This line imports the PdfReader class from the PyPDF2 library.
+PyPDF2 is a Python library used to read, merge, split, and manipulate PDF files.
+With PdfReader, you can open a PDF, extract text, and read its pages easily! 📄🔍
+
+👉from langchain.text_splitter import RecursiveCharacterTextSplitter
+This line imports the RecursiveCharacterTextSplitter from the LangChain library.
+LangChain is a Python library used for working with Large Language Models (LLMs), like chatbots and AI-powered applications.
+RecursiveCharacterTextSplitter helps break long text into smaller chunks while keeping the meaning intact. This is useful when working with large documents in AI models, as they process smaller parts more efficiently! ✂📄🤖
+
+👉import os
+This line imports the os module in Python.
+os stands for Operating System, and this module helps Python interact with the system, like managing files, folders, and environment variables.
+For example, you can use it to list files in a folder, create/delete directories, or get system information! 🖥📂🚀
+
+👉from langchain_google_genai import GoogleGenerativeAIEmbeddings
+This line imports GoogleGenerativeAIEmbeddings from the langchain_google_genai library.
+This is used to generate vector embeddings for text using Google's Generative AI models.
+Embeddings convert text into numerical representations so that AI models can understand and compare their meanings. This is useful in chatbots, search engines, and document retrieval! 🤖📄➡🔢
+
+👉import google.generativeai as genai
+This line imports the generativeai module from the google library.
+Google Generative AI (Gemini API) allows you to use Google’s powerful AI models for tasks like text generation, answering questions, summarization, and more.
+With this, you can build smart chatbots, AI-powered apps, or content generators! 🤖🚀
+
+👉from langchain.vectorstores import FAISS
+This line imports FAISS from the langchain.vectorstores module.
+FAISS (Facebook AI Similarity Search) is a fast and efficient library for storing and searching similar text or data using vector embeddings.
+In AI applications, FAISS helps quickly find relevant documents when a user asks a question, making it great for chatbots, search engines, and recommendation systems! 🔍📄🚀
+
+👉from langchain_google_genai import ChatGoogleGenerativeAI
+This line imports ChatGoogleGenerativeAI from the langchain_google_genai library.
+This is used to create chatbots or AI-powered assistants using Google's Generative AI (Gemini API).
+It allows you to have conversations, generate text, answer questions, summarize content, and more—just like ChatGPT! 🤖💬🚀
+
+👉from langchain.chains.question_answering import load_qa_chain
+This line imports load_qa_chain from langchain.chains.question_answering.
+It is used to create a Question-Answering (QA) system that takes a document and a question, then finds the best answer from the document.
+This is helpful for chatbots, AI assistants, and document search tools where users can ask questions about uploaded PDFs, articles, or any text data! 📄❓🤖
+
+👉from langchain.prompts import PromptTemplate
+This line imports PromptTemplate from langchain.prompts.
+A PromptTemplate helps you structure and format prompts before sending them to an AI model.
+
+👉from dotenv import load_dotenv
+This line imports load_dotenv from the dotenv library.
+dotenv is used to store and load environment variables from a .env file.
+This is useful for keeping API keys, database credentials, or secret settings hidden and secure instead of writing them directly in your code.

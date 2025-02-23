@@ -1,0 +1,13 @@
+prefix=D:/SmartPDF-Chatbot/venv/Library
+exec_prefix=D:/SmartPDF-Chatbot/venv/Library
+libdir=D:/SmartPDF-Chatbot/venv/Library/lib
+sharedlibdir=D:/SmartPDF-Chatbot/venv/Library/lib
+includedir=D:/SmartPDF-Chatbot/venv/Library/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
