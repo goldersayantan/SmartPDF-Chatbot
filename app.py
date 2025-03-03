@@ -42,16 +42,26 @@ def create_vector_store(text_chunks):
 def load_vector_store():
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     if os.path.exists("faiss_index"):
-        return FAISS.load_local("faiss_index", embeddings)
+        return FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
     return None
 
-# def load_vector_store():
-#     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-#     if not os.path.exists("faiss_index") or not os.listdir("faiss_index"):
-#         st.warning("FAISS index not found. Please upload a PDF and process it first.")
-#         return None
-#     return FAISS.load_local("faiss_index", embeddings)
+# def get_conversational_chain():
+#     prompt_template = """
+#     Answer the question as detailed as possible from the provided context. If the answer is not in
+#     the provided context, just say, "answer is not available in the context", don't provide the wrong answer.\n\n
+#     Context:\n {context}\n
+#     Question: \n{question}\n
+#     Answer:
+#     """
 
+#     # model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+#     model = genai.GenerativeModel("gemini-pro")
+#     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+#     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+#     return chain
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 def get_conversational_chain():
     prompt_template = """
@@ -62,11 +72,13 @@ def get_conversational_chain():
     Answer:
     """
 
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.3)
+
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
     return chain
+
 
 def user_input(user_question, vector_store):
     docs = vector_store.similarity_search(user_question)
@@ -123,3 +135,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
