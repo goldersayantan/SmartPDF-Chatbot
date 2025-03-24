@@ -1,3 +1,4 @@
+
 import streamlit as st
 from PyPDF2 import PdfReader
 from docx import Document
@@ -19,15 +20,16 @@ if api_key is None:
 else:
     genai.configure(api_key=api_key)
 
+# Extract text from PDFs
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
         pdf_reader = PdfReader(pdf)
         for page in pdf_reader.pages:
-            page_text = page.extract_text() or ""  # Handle None case
-            text += page_text
+            text += page.extract_text() or ""  # Handle None case
     return text
 
+# Extract text from DOCX
 def get_docx_text(docx_files):
     text = ""
     for docx in docx_files:
@@ -36,23 +38,25 @@ def get_docx_text(docx_files):
             text += para.text + "\n"
     return text
 
+# Split text into chunks for embedding
 def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
-    chunks = text_splitter.split_text(text)
-    return chunks
+    return text_splitter.split_text(text)
 
+# Create FAISS vector store
 def create_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
-    vector_store.save_local("faiss_index")  # Save FAISS index
     return vector_store
 
+# Load vector store if exists
 def load_vector_store():
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     if os.path.exists("faiss_index"):
         return FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
     return None
 
+# Chat model configuration
 def get_conversational_chain():
     prompt_template = """
     Answer the question as detailed as possible from the provided context. If the answer is not in
@@ -64,58 +68,42 @@ def get_conversational_chain():
     
     model = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.3)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
-    return chain
+    return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
+# Handles user input and updates chat history
 def user_input(user_question, vector_store):
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []  # Initialize chat history
+
     docs = vector_store.similarity_search(user_question)
     if not docs:
-        st.write("No relevant documents found.")
-        return
+        st.session_state.chat_history.append(("User", user_question))
+        st.session_state.chat_history.append(("Bot", "No relevant documents found."))
+    else:
+        chain = get_conversational_chain()
+        response = chain(
+            {"input_documents": docs, "question": user_question},
+            return_only_outputs=True
+        )
+        bot_response = response["output_text"]
+        st.session_state.chat_history.append(("User", user_question))
+        st.session_state.chat_history.append(("Bot", bot_response))
     
-    chain = get_conversational_chain()
-    response = chain(
-        {"input_documents": docs, "question": user_question},
-        return_only_outputs=True
-    )
-    st.write("Reply: ", response["output_text"])
+    display_chat()
 
-def main():
-    st.set_page_config("SMART CHATBOT")
-    st.header("SMART CHATBOT 🤖 | Chat with PDFs & DOCX!")
+# Display chat history
+def display_chat():
+    st.subheader("Chat History")
 
-    user_question = st.text_input("Ask a Question from the Documents")
+    for sender, message in st.session_state.chat_history:
+        if sender == "User":
+            with st.chat_message("user"):
+                st.markdown(f"**{sender}:** {message}")
+        else:
+            with st.chat_message("assistant"):
+                st.markdown(f"**{sender}:** {message}")
 
-    if user_question and 'vector_store' in st.session_state:
-        user_input(user_question, st.session_state.vector_store)
-    
-    with st.sidebar:
-        st.title("Menu:")
-        file_type = st.radio("Choose file type to upload", ("PDF", "DOCX"))
-        
-        if file_type == "PDF":
-            pdf_docs = st.file_uploader("Upload your PDF Files", type=["pdf"], accept_multiple_files=True)
-            if st.button("Submit PDF & Process"):
-                if pdf_docs:
-                    with st.spinner("Processing PDF..."):
-                        raw_text = get_pdf_text(pdf_docs)
-                        process_text(raw_text)
-                else:
-                    st.error("Please upload at least one PDF file.")
-        
-        elif file_type == "DOCX":
-            docx_docs = st.file_uploader("Upload your DOCX Files", type=["docx"], accept_multiple_files=True)
-            if st.button("Submit DOCX & Process"):
-                if docx_docs:
-                    with st.spinner("Processing DOCX..."):
-                        raw_text = get_docx_text(docx_docs)
-                        process_text(raw_text)
-                else:
-                    st.error("Please upload at least one DOCX file.")
-    
-    if 'vector_store' not in st.session_state:
-        st.session_state.vector_store = load_vector_store()
-
+# Process uploaded text and store embeddings
 def process_text(raw_text):
     if not raw_text.strip():
         st.error("No text extracted. Please check the document.")
@@ -127,10 +115,62 @@ def process_text(raw_text):
         return
     
     try:
-        st.session_state.vector_store = create_vector_store(text_chunks)
-        st.success("File Uploaded Successfully, Now Ask Questions.")
+        vector_store = create_vector_store(text_chunks)
+        st.session_state.vector_store = vector_store  # Store in session state
+        st.success("Files processed successfully! You can now ask questions.")
     except Exception as e:
         st.error(f"Error creating vector store: {e}")
+
+# Main function
+def main():
+    st.set_page_config("SMART CHATBOT")
+    st.header("SMART CHATBOT 🤖 | Chat with PDFs & DOCX!")
+
+    st.markdown("""
+        <style>
+        .stChatMessage {background-color: #1e1e1e; color: white; padding: 10px; border-radius: 10px;}
+        .stSidebar {background-color: #282828; color: white;}
+        .stButton > button {width: 100%;}
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.title("🤖 RAG System")
+    
+    # Sidebar file upload (ONLY PDF & DOCX)
+    with st.sidebar:
+        st.title("Upload Documents:")
+        uploaded_files = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"], accept_multiple_files=True)
+
+        if uploaded_files:
+            if "processed_files" not in st.session_state:
+                st.session_state.processed_files = []
+
+            new_files = [file for file in uploaded_files if file.name not in st.session_state.processed_files]
+
+            if new_files:
+                with st.spinner("Processing files..."):
+                    raw_text = ""
+                    pdf_files = [f for f in new_files if f.type == "application/pdf"]
+                    docx_files = [f for f in new_files if f.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+
+                    if pdf_files:
+                        raw_text += get_pdf_text(pdf_files)
+                    if docx_files:
+                        raw_text += get_docx_text(docx_files)
+
+                    process_text(raw_text)
+                    st.session_state.processed_files.extend([file.name for file in new_files])  # Mark as processed
+
+    # Load existing vector store if not already loaded
+    if 'vector_store' not in st.session_state:
+        st.session_state.vector_store = load_vector_store()
+
+    # User input at bottom
+    st.markdown("---")
+    user_question = st.chat_input("Ask a question about your uploaded documents...")
+
+    if user_question and 'vector_store' in st.session_state and st.session_state.vector_store:
+        user_input(user_question, st.session_state.vector_store)
 
 if __name__ == "__main__":
     main()
