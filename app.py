@@ -1,4 +1,3 @@
-
 import streamlit as st
 from PyPDF2 import PdfReader
 from docx import Document
@@ -60,7 +59,7 @@ def load_vector_store():
 def get_conversational_chain():
     prompt_template = """
     Answer the question as detailed as possible from the provided context. If the answer is not in
-    the provided context, just say, "answer is not available in the context", don't provide the wrong answer.\n\n
+    the provided context, just say, "Answer is not available in the context", don't provide the wrong answer.\n\n
     Context:\n {context}\n
     Question: \n{question}\n
     Answer:
@@ -75,51 +74,74 @@ def user_input(user_question, vector_store):
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []  # Initialize chat history
 
-    docs = vector_store.similarity_search(user_question)
-    if not docs:
-        st.session_state.chat_history.append(("User", user_question))
-        st.session_state.chat_history.append(("Bot", "No relevant documents found."))
-    else:
-        chain = get_conversational_chain()
-        response = chain(
-            {"input_documents": docs, "question": user_question},
-            return_only_outputs=True
-        )
-        bot_response = response["output_text"]
-        st.session_state.chat_history.append(("User", user_question))
-        st.session_state.chat_history.append(("Bot", bot_response))
-    
+    # Display the chat history before adding the new question
     display_chat()
 
-# Display chat history
+    # Immediately show the user's question
+    with st.chat_message("user"):
+        st.markdown(f"**User:** {user_question}")
+
+    # Add the user question to session state chat history
+    st.session_state.chat_history.append(("User", user_question))
+
+    # Show a loader while generating the response
+    with st.spinner("Generating response..."):
+        docs = vector_store.similarity_search(user_question)
+        if not docs:
+            bot_response = "No relevant documents found."
+        else:
+            chain = get_conversational_chain()
+            response = chain(
+                {"input_documents": docs, "question": user_question},
+                return_only_outputs=True
+            )
+            bot_response = response["output_text"]
+
+    # Add bot response to chat history
+    st.session_state.chat_history.append(("Bot", bot_response))
+
+    # Show bot's response
+    with st.chat_message("assistant"):
+        st.markdown(f"**Bot:** {bot_response}")
+
+# Display chat history (excluding the latest user input)
 def display_chat():
-    st.subheader("Chat History")
+    # st.subheader("Chat History")
 
     for sender, message in st.session_state.chat_history:
-        if sender == "User":
-            with st.chat_message("user"):
-                st.markdown(f"**{sender}:** {message}")
-        else:
-            with st.chat_message("assistant"):
-                st.markdown(f"**{sender}:** {message}")
+        with st.chat_message("user" if sender == "User" else "assistant"):
+            st.markdown(f"**{sender}:** {message}")
 
 # Process uploaded text and store embeddings
+# Process uploaded text and update vector store
 def process_text(raw_text):
     if not raw_text.strip():
         st.error("No text extracted. Please check the document.")
         return
-    
+
     text_chunks = get_text_chunks(raw_text)
     if not text_chunks:
         st.error("No text chunks created. Please check the document content.")
         return
-    
+
     try:
-        vector_store = create_vector_store(text_chunks)
-        st.session_state.vector_store = vector_store  # Store in session state
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
+        # Load existing vector store if available
+        if "vector_store" in st.session_state and st.session_state.vector_store:
+            existing_vector_store = st.session_state.vector_store
+            new_vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+            existing_vector_store.merge_from(new_vector_store)  # Merge new embeddings
+        else:
+            existing_vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+
+        # Save updated vector store to session state
+        st.session_state.vector_store = existing_vector_store
         st.success("Files processed successfully! You can now ask questions.")
+
     except Exception as e:
-        st.error(f"Error creating vector store: {e}")
+        st.error(f"Error creating/updating vector store: {e}")
+
 
 # Main function
 def main():
@@ -134,9 +156,7 @@ def main():
         </style>
     """, unsafe_allow_html=True)
     
-    st.title("🤖 RAG System")
-    
-    # Sidebar file upload (ONLY PDF & DOCX)
+    # Sidebar file upload
     with st.sidebar:
         st.title("Upload Documents:")
         uploaded_files = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"], accept_multiple_files=True)
@@ -174,3 +194,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
