@@ -112,7 +112,6 @@ def display_chat():
         with st.chat_message("user" if sender == "User" else "assistant"):
             st.markdown(f"**{sender}:** {message}")
 
-# Process uploaded text and store embeddings
 # Process uploaded text and update vector store
 def process_text(raw_text):
     if not raw_text.strip():
